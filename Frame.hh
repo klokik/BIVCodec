@@ -129,10 +129,15 @@ namespace BIVCodec
         image_data(std::move(_src.image_data))
     { }
 
-    public: ImageMatrix(const int _width, const int _height, const ColorSpace _mode = ColorSpace::Grayscale):
+    public: ImageMatrix(const int _width, const int _height,
+        const ColorSpace _mode = ColorSpace::Grayscale, const void *_data = nullptr):
         width(_width), height(_height), color_mode(_mode),
         image_data(_width*_height, 0.f)
-    { }
+    {
+      const uint8_t *data = reinterpret_cast<const uint8_t *>(_data);
+      for (size_t i = 0; i < _width*_height; ++i)
+        this->image_data[i] = data[i];
+    }
 
     public: inline float getFragment(const int _x, const int _y, const int _channel = 0) const noexcept
     { return 0; /* DUMMY */ }
