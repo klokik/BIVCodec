@@ -124,6 +124,11 @@ namespace BIVCodec
 
     private: std::vector<float> image_data;
 
+    public: ImageMatrix(ImageMatrix &&_src):
+        width(_src.width), height(_src.height), color_mode(_src.color_mode),
+        image_data(std::move(_src.image_data))
+    { }
+
     public: ImageMatrix(const int _width, const int _height, const ColorSpace _mode = ColorSpace::Grayscale):
         width(_width), height(_height), color_mode(_mode),
         image_data(_width*_height, 0.f)
@@ -225,6 +230,8 @@ namespace BIVCodec
       ImageMatrix image(_width, _height, ColorSpace::Grayscale);
 
       applyNodeToMatrixRecursive(image, Rect(0, 0, _width, _height), this->root_node);
+
+      return std::move(image);
     }
 
     /// UNTESTED
