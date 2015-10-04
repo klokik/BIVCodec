@@ -185,8 +185,8 @@ namespace BIVCodec
     /// SINGLETHREAD
     protected: void applyFrameFromMatrixRecursive(const ImageMatrix &_src, const Rect &_roi, std::vector<bool> _path)
     {
-      // limit number of layers
-      if ((std::max(_roi.width,_roi.height) <= 1) || (_path.size() > 4))
+      // limit number of layers, (24bit path depth - 4k resolution max)
+      if ((std::max(_roi.width,_roi.height) <= 1) || (_path.size() > 24))
         return;
 
       FrameImageData fdata;
