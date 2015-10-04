@@ -1,5 +1,6 @@
 #include <cassert>
 
+#include <algorithm>
 #include <vector>
 #include <tuple>
 #include <memory>
@@ -202,7 +203,7 @@ namespace BIVCodec
       applyFrameData(fdata);
 
       // limit number of layers
-      if(_path.size() > 4)
+      if((_roi.width,_roi.height) <= 1) || (_path.size() > 4))
         return;
 
       auto path_left = _path;
@@ -230,10 +231,14 @@ namespace BIVCodec
     /// NOT OPTIMAL
     protected: void applyNodeToMatrixRecursive(ImageMatrix &_dst, const Rect &_roi, std::shared_ptr<ImageNode> _node) const noexcept
     {
+
       Rect rect_left;
       Rect rect_right;
 
       _dst.fillRect(_roi, _node->value);
+
+      if(std::max(_roi.width,_roi.height) <= 1)
+        return;
 
       std::tie(rect_left, rect_right) = splitRect(_roi);
 
