@@ -94,7 +94,7 @@ namespace BIVCodec
   /// UNTESTED
   std::pair<Rect, Rect> splitRect(const Rect _rect)
   {
-    if(_rect.isHorizontal())
+    if (_rect.isHorizontal())
       return std::make_pair(
           Rect(_rect.x,
                _rect.y,
@@ -183,7 +183,7 @@ namespace BIVCodec
 
     /// UNTESTED
     /// SINGLETHREAD
-    protected: void applyFrameFromMatrixRecursive(const ImageMatrix &_src, const Rect _roi, std::vector<bool> _path)
+    protected: void applyFrameFromMatrixRecursive(const ImageMatrix &_src, const Rect &_roi, std::vector<bool> _path)
     {
       FrameImageData fdata;
       fdata.location.path = _path;
@@ -203,7 +203,7 @@ namespace BIVCodec
       applyFrameData(fdata);
 
       // limit number of layers
-      if((_roi.width,_roi.height) <= 1) || (_path.size() > 4))
+      if ((std::max(_roi.width,_roi.height) <= 1) || (_path.size() > 4))
         return;
 
       auto path_left = _path;
@@ -237,12 +237,12 @@ namespace BIVCodec
 
       _dst.fillRect(_roi, _node->value);
 
-      if(std::max(_roi.width,_roi.height) <= 1)
+      if (std::max(_roi.width,_roi.height) <= 1)
         return;
 
       std::tie(rect_left, rect_right) = splitRect(_roi);
 
-      if(_node->left)
+      if (_node->left)
         applyNodeToMatrixRecursive(_dst, rect_left, _node->left);
       else
         applyNodeToMatrixRecursive(_dst, rect_right, _node->right);
@@ -254,11 +254,11 @@ namespace BIVCodec
     {
       auto curr_node = this->root_node;
 
-      while(_modifier.location.layer != curr_node->layer)
+      while (_modifier.location.layer != curr_node->layer)
       {
-        if(!_modifier.location.Path(curr_node->layer))
+        if (!_modifier.location.Path(curr_node->layer))
         {
-          if(!curr_node->left)
+          if (!curr_node->left)
             curr_node->left = std::make_shared<ImageNode>(-1.f, curr_node->layer+1);
 
           curr_node = curr_node->left;
@@ -266,7 +266,7 @@ namespace BIVCodec
         }
         else
         {
-          if(!curr_node->right)
+          if (!curr_node->right)
             curr_node->right = std::make_shared<ImageNode>(-1.f, curr_node->layer+1);
 
           curr_node = curr_node->right;
@@ -275,9 +275,9 @@ namespace BIVCodec
       }
 
       // FIXME biolerplate code
-      if(!curr_node->left)
+      if (!curr_node->left)
         curr_node->left = std::make_shared<ImageNode>(-1.f, curr_node->layer+1);
-      if(!curr_node->right)
+      if (!curr_node->right)
         curr_node->right = std::make_shared<ImageNode>(-1.f, curr_node->layer+1);
 
       curr_node->left->value = _modifier.value_l;
