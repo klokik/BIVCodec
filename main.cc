@@ -13,7 +13,7 @@ int main(int argc, const char **argv)
   for (int i = 0; i < lena_image.width*lena_image.height*lena_image.bytes_per_pixel; i += lena_image.bytes_per_pixel)
     source.push_back(lena_image.pixel_data[i]);
 
-  BIVCodec::ImageMatrix src_image(128,128,BIVCodec::ColorSpace::Grayscale,&source[0]);
+  BIVCodec::ImageMatrix src_image(lena_image.width,lena_image.height,BIVCodec::ColorSpace::Grayscale,&source[0]);
 
   BIVCodec::ImageBSP bsp_image(src_image,BIVCodec::ColorSpace::Grayscale);
 
