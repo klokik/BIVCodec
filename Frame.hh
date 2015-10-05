@@ -142,6 +142,28 @@ namespace BIVCodec
       }
     }
 
+    public: ImageMatrix &operator=(const ImageMatrix &_src)
+    {
+      this->width = _src.width;
+      this->height = _src.height;
+      this->color_mode = _src.color_mode;
+
+      this->image_data = _src.image_data;
+
+      return *this;
+    }
+
+    public: ImageMatrix &operator=(const ImageMatrix &&_src)
+    {
+      this->width = _src.width;
+      this->height = _src.height;
+      this->color_mode = _src.color_mode;
+
+      this->image_data = std::move(_src.image_data);
+
+      return *this;
+    }
+
     public: inline float getFragment(const int _x, const int _y, const int _channel = 0) const noexcept
     {
       assert((_x >= 0) && (_x < this->width));
