@@ -1,4 +1,5 @@
 #include <cassert>
+#include <ctime>
 
 #include <algorithm>
 #include <vector>
@@ -31,7 +32,7 @@ namespace BIVCodec
 
   struct FrameHeader
   {
-    enum HeaderType {Image,Sync};
+    enum class HeaderType {Image,Sync};
     HeaderType type;
   };
 
@@ -46,7 +47,7 @@ namespace BIVCodec
     using FrameSourceWidth = int;
     using FrameSourceRatio = float;
     using FrameID = int;
-    using Timestamp = int;
+    using Timestamp = uint32_t;
 
     FrameSourceWidth width;
     FrameSourceRatio ratio;
@@ -68,7 +69,7 @@ namespace BIVCodec
   struct Frame
   {
     FrameHeader header;
-    FrameData *data;
+    std::shared_ptr<FrameData> data;
   };
 
   struct Rect
@@ -247,6 +248,7 @@ namespace BIVCodec
       assert(_src.width >= 2);
       assert(_src.height >= 1);
 
+      this->width = _src.width;
       this->ratio = static_cast<float>(_src.height)/_src.width;
       this->color_mode = ColorSpace::Grayscale;
 
@@ -355,6 +357,44 @@ namespace BIVCodec
       curr_node->right->value = _modifier.value_r;
 
       this->frames++;
+    }
+
+    public: std::vector<Frame> asFrameChain() noexcept
+    {
+      std::vector<Frame> frame_chain;
+
+      Frame frame;
+
+      frame.header.type = FrameHeader::HeaderType::Sync;
+
+      auto sync_data = std::make_shared<FrameSyncData>();
+      frame.data = std::static_pointer_cast<FrameData>(sync_data);
+
+      sync_data->width = this->width;
+      sync_data->ratio = this->ratio;
+
+      sync_data->color_format = this->color_mode;
+      sync_data->id = -1;
+
+      sync_data->timestamp = static_cast<uint32_t>(std::time(nullptr));
+
+      frame_chain.push_back(frame);
+
+      // foreach node in image-node-tree
+      auto node = this->root_node;
+      {
+        auto image_data = std::make_shared<FrameImageData>();
+        frame.data = std::static_pointer_cast<FrameData>(image_data);
+
+        image_data->channel = 0;
+
+        image_data->value_l = node->left ? node->left->value : node->value;
+        image_data->value_r = node->right ? node->right->value : node->value;
+
+        frame_chain.push_back(frame);
+      }
+
+      return std::move(frame_chain);
     }
   };
 };
