@@ -242,7 +242,6 @@ namespace BIVCodec
         color_mode(_mode)
     { }
 
-    /// UNTESTED
     public: ImageBSP(const ImageMatrix &_src, const ColorSpace _mode)
     {
       assert(_src.width >= 2);
@@ -254,7 +253,6 @@ namespace BIVCodec
       this->applyFrameFromMatrixRecursive(_src, Rect(0, 0, _src.width, _src.height), std::vector<bool>());
     }
 
-    /// UNTESTED
     /// SINGLETHREAD
     protected: void applyFrameFromMatrixRecursive(const ImageMatrix &_src, const Rect &_roi, std::vector<bool> _path)
     {
@@ -290,7 +288,6 @@ namespace BIVCodec
       applyFrameFromMatrixRecursive(_src, rect_right, path_right);
     }
 
-    /// UNTESTED
     /// NOT OPTIMAL
     public: ImageMatrix asImageMatrix(const int _width) const noexcept
     {
@@ -302,7 +299,6 @@ namespace BIVCodec
       return std::move(image);
     }
 
-    /// UNTESTED
     /// NOT OPTIMAL
     protected: void applyNodeToMatrixRecursive(ImageMatrix &_dst, const Rect &_roi, std::shared_ptr<ImageNode> _node) const noexcept
     {
@@ -319,7 +315,8 @@ namespace BIVCodec
 
       if (_node->left)
         applyNodeToMatrixRecursive(_dst, rect_left, _node->left);
-      else
+
+      if (_node->right)
         applyNodeToMatrixRecursive(_dst, rect_right, _node->right);
     }
 
@@ -331,7 +328,7 @@ namespace BIVCodec
 
       while (_modifier.location.layer != curr_node->layer)
       {
-        if (!_modifier.location.Path(curr_node->layer))
+        if (!_modifier.location.path[curr_node->layer])
         {
           if (!curr_node->left)
             curr_node->left = std::make_shared<ImageNode>(-1.f, curr_node->layer+1);
