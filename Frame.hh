@@ -320,7 +320,6 @@ namespace BIVCodec
         applyNodeToMatrixRecursive(_dst, rect_right, _node->right);
     }
 
-    /// UNTESTED
     /// THREAD UNSAFE
     public: void applyFrameData(const FrameImageData &_modifier) noexcept
     {
