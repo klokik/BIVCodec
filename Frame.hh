@@ -256,11 +256,13 @@ namespace BIVCodec
     }
 
     /// SINGLETHREAD
-    protected: void applyFrameFromMatrixRecursive(const ImageMatrix &_src, const Rect &_roi, std::vector<bool> _path)
+    protected: float applyFrameFromMatrixRecursive(const ImageMatrix &_src, const Rect &_roi, std::vector<bool> _path)
     {
       // limit number of layers, (24bit path depth - 4k resolution max)
       if ((std::max(_roi.width,_roi.height) <= 1) || (_path.size() > 24))
-        return;
+      {
+        return _src.getAverageValue(_roi);
+      }
 
       FrameImageData fdata;
       fdata.location.path = _path;
@@ -274,11 +276,6 @@ namespace BIVCodec
 
       fdata.channel = 0;
 
-      fdata.value_l = _src.getAverageValue(rect_left);
-      fdata.value_r = _src.getAverageValue(rect_right);
-
-      applyFrameData(fdata);
-
       auto path_left = _path;
       auto path_right = _path;
 
@@ -286,8 +283,12 @@ namespace BIVCodec
       path_right.push_back(1);
 
       // thread it?
-      applyFrameFromMatrixRecursive(_src, rect_left, path_left);
-      applyFrameFromMatrixRecursive(_src, rect_right, path_right);
+      fdata.value_l = applyFrameFromMatrixRecursive(_src, rect_left, path_left);
+      fdata.value_r = applyFrameFromMatrixRecursive(_src, rect_right, path_right);
+
+      applyFrameData(fdata);
+
+      return (fdata.value_l+fdata.value_r)/2;
     }
 
     /// NOT OPTIMAL
@@ -304,22 +305,29 @@ namespace BIVCodec
     /// NOT OPTIMAL
     protected: void applyNodeToMatrixRecursive(ImageMatrix &_dst, const Rect &_roi, std::shared_ptr<ImageNode> _node) const noexcept
     {
-
-      Rect rect_left;
-      Rect rect_right;
-
-      _dst.fillRect(_roi, _node->value);
+      if((!_node->left) && (!_node->right))
+      {
+        _dst.fillRect(_roi, _node->value);
+        return;
+      }
 
       if (std::max(_roi.width,_roi.height) <= 1)
         return;
+
+      Rect rect_left;
+      Rect rect_right;
 
       std::tie(rect_left, rect_right) = splitRect(_roi);
 
       if (_node->left)
         applyNodeToMatrixRecursive(_dst, rect_left, _node->left);
+      else
+        _dst.fillRect(rect_left, _node->value);
 
       if (_node->right)
         applyNodeToMatrixRecursive(_dst, rect_right, _node->right);
+      else
+        _dst.fillRect(rect_right, _node->value);
     }
 
     /// THREAD UNSAFE
