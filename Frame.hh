@@ -91,7 +91,6 @@ namespace BIVCodec
     { return !this->isHorizontal(); }
   };
 
-  /// UNTESTED
   std::pair<Rect, Rect> splitRect(const Rect _rect)
   {
     if (_rect.isHorizontal())

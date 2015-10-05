@@ -19,7 +19,22 @@ int main(int argc, const char **argv)
 
   std::cout << "Frames: " << bsp_image.frames << std::endl;
 
-  BIVCodec::ImageMatrix dec_image(bsp_image.asImageMatrix(128));
+  BIVCodec::ImageMatrix dec_image(128,128,BIVCodec::ColorSpace::Grayscale);
+
+  dec_image.fillRect(BIVCodec::Rect(0, 0, 32, 128), 64.f);
+
+  BIVCodec::Rect rect_left;
+  BIVCodec::Rect rect_right;
+
+  std::tie(rect_left,rect_right) = BIVCodec::splitRect(BIVCodec::Rect(32, 16, 64, 48));
+  dec_image.fillRect(rect_left, 128.f);
+  dec_image.fillRect(rect_right, 200.f);
+
+  std::tie(rect_left,rect_right) = BIVCodec::splitRect(BIVCodec::Rect(96, 0, 32, 128));
+  dec_image.fillRect(rect_left, 128.f);
+  dec_image.fillRect(rect_right, 200.f);
+
+  dec_image = std::move(bsp_image.asImageMatrix(128));
 
   std::cout << "Width:\t" << dec_image.width << std::endl
             << "Height:\t" << dec_image.height << std::endl;
