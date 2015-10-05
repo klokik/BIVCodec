@@ -13,13 +13,13 @@ int main(int argc, const char **argv)
   for (int i = 0; i < lena_image.width*lena_image.height*lena_image.bytes_per_pixel; i += lena_image.bytes_per_pixel)
     source.push_back(lena_image.pixel_data[i]);
 
-  BIVCodec::ImageMatrix src_image(128,128,BIVCodec::ColorSpace::Grayscale);
+  BIVCodec::ImageMatrix src_image(128,128,BIVCodec::ColorSpace::Grayscale,&source[0]);
 
   BIVCodec::ImageBSP bsp_image(src_image,BIVCodec::ColorSpace::Grayscale);
 
   std::cout << "Frames: " << bsp_image.frames << std::endl;
 
-  BIVCodec::ImageMatrix dec_image(std::move(bsp_image.asImageMatrix(128)));
+  BIVCodec::ImageMatrix dec_image(bsp_image.asImageMatrix(128)));
 
   std::cout << "Width:\t" << dec_image.width << std::endl
             << "Height:\t" << dec_image.height << std::endl;
@@ -28,7 +28,7 @@ int main(int argc, const char **argv)
   ofs.open("image.data", std::ios_base::binary|std::ios_base::out);
 
   for (int i = 0; i < dec_image.width*dec_image.height; ++i)
-    ofs << static_cast<char>(dec_image.getFragment(i%dec_image.width,i/dec_image.width,0));
+    ofs << static_cast<char>(dec_image.getFragment(i));
 
   ofs.close();
 }

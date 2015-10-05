@@ -134,13 +134,28 @@ namespace BIVCodec
         width(_width), height(_height), color_mode(_mode),
         image_data(_width*_height, 0.f)
     {
-      const uint8_t *data = reinterpret_cast<const uint8_t *>(_data);
-      for (size_t i = 0; i < _width*_height; ++i)
-        this->image_data[i] = data[i];
+      if (_data)
+      {
+        const uint8_t *data = reinterpret_cast<const uint8_t *>(_data);
+        for (size_t i = 0; i < _width*_height; ++i)
+          this->image_data[i] = data[i];
+      }
     }
 
     public: inline float getFragment(const int _x, const int _y, const int _channel = 0) const noexcept
-    { return 0; /* DUMMY */ }
+    {
+      assert((_x >= 0) && (_x < this->width));
+      assert((_y >= 0) && (_y < this->height));
+
+      return this->image_data[_y*this->width + _x];
+    }
+
+    public: inline float getFragment(const int _id) const noexcept
+    {
+      assert((_id >= 0) && (_id < this->width*this->height));
+
+      return this->image_data[_id];
+    }
 
     public: float getAverageValue(const Rect &_roi) const
     { return 0; /* DUMMY */ }
