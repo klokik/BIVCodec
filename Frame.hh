@@ -332,7 +332,10 @@ namespace BIVCodec
         if (!_modifier.location.path[curr_node->layer])
         {
           if (!curr_node->left)
+          {
             curr_node->left = std::make_shared<ImageNode>(-1.f, curr_node->layer+1);
+            curr_node->left->parent = curr_node;
+          }
 
           curr_node = curr_node->left;
           continue;
@@ -340,7 +343,10 @@ namespace BIVCodec
         else
         {
           if (!curr_node->right)
+          {
             curr_node->right = std::make_shared<ImageNode>(-1.f, curr_node->layer+1);
+            curr_node->right->parent = curr_node;
+          }
 
           curr_node = curr_node->right;
           continue;
@@ -349,9 +355,15 @@ namespace BIVCodec
 
       // FIXME biolerplate code
       if (!curr_node->left)
+      {
         curr_node->left = std::make_shared<ImageNode>(-1.f, curr_node->layer+1);
+        curr_node->left->parent = curr_node;
+      }
       if (!curr_node->right)
+      {
         curr_node->right = std::make_shared<ImageNode>(-1.f, curr_node->layer+1);
+        curr_node->right->parent = curr_node;
+      }
 
       curr_node->left->value = _modifier.value_l;
       curr_node->right->value = _modifier.value_r;
