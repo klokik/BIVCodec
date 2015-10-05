@@ -157,11 +157,38 @@ namespace BIVCodec
       return this->image_data[_id];
     }
 
-    public: float getAverageValue(const Rect &_roi) const
-    { return 0; /* DUMMY */ }
+    public: inline void setFragment(const int _x, const int _y, const int _channel, const float _value) noexcept
+    {
+      assert((_x >= 0) && (_x < this->width));
+      assert((_y >= 0) && (_y < this->height));
 
-    public: void fillRect(const Rect &_roi, const float value) noexcept
-    { return; /* DUMMY */ }
+      this->image_data[_y*this->width + _x] = _value;
+    }
+
+    public: inline void setFragment(const int _id, const float _value) noexcept
+    {
+      assert((_id >= 0) && (_id < this->width*this->height));
+
+      this->image_data[_id] = _value;
+    }
+
+    public: float getAverageValue(const Rect &_roi) const
+    {
+      float acc = 0;
+
+      for (int i = 0; i < _roi.width; ++i)
+        for (int j = 0; j < _roi.height; ++j)
+          acc += this->getFragment(_roi.x+i, _roi.y+j, 0);
+
+      return acc/(_roi.width*_roi.height);
+    }
+
+    public: void fillRect(const Rect &_roi, const float _value) noexcept
+    {
+      for (int i = 0; i < _roi.width; ++i)
+        for (int j = 0; j < _roi.height; ++j)
+          this->setFragment(_roi.x+i, _roi.y+j, 0, _value);
+    }
   };
 
 

@@ -19,7 +19,7 @@ int main(int argc, const char **argv)
 
   std::cout << "Frames: " << bsp_image.frames << std::endl;
 
-  BIVCodec::ImageMatrix dec_image(bsp_image.asImageMatrix(128)));
+  BIVCodec::ImageMatrix dec_image(bsp_image.asImageMatrix(128));
 
   std::cout << "Width:\t" << dec_image.width << std::endl
             << "Height:\t" << dec_image.height << std::endl;
