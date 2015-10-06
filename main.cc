@@ -5,8 +5,8 @@
 
 #include "Frame.hh"
 
-#include "lena_gray.hh"
-// #include "lena_color.hh"
+// #include "lena_gray.hh"
+#include "lena_color.hh"
 
 
 int main(int argc, const char **argv)
@@ -35,10 +35,11 @@ int main(int argc, const char **argv)
 
     std::shuffle(frame_chain.begin(), frame_chain.end(), re);
 
-    int new_size = frame_chain.size()*0.3;
+    int new_size = frame_chain.size()*0.05;
     frame_chain.erase(frame_chain.begin()+new_size, frame_chain.end());
   }
   bsp_from_chain.applyFrameChain(frame_chain);
+  bsp_from_chain.repair();
 
   BIVCodec::ImageMatrix dec_image(std::move(bsp_from_chain.asImageMatrix(512)));
 

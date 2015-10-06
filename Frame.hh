@@ -237,7 +237,7 @@ namespace BIVCodec
       { }
     };
 
-    private: std::shared_ptr<ImageNode> root_node = std::make_shared<ImageNode>(0.f,0);
+    private: std::shared_ptr<ImageNode> root_node = std::make_shared<ImageNode>(-1.f,0);
 
     public: int frames = 0;
 
@@ -341,7 +341,7 @@ namespace BIVCodec
         {
           if (!curr_node->left)
           {
-            curr_node->left = std::make_shared<ImageNode>(curr_node->value, curr_node->layer+1);
+            curr_node->left = std::make_shared<ImageNode>(-1.f, curr_node->layer+1);
             curr_node->left->parent = curr_node;
           }
 
@@ -352,7 +352,7 @@ namespace BIVCodec
         {
           if (!curr_node->right)
           {
-            curr_node->right = std::make_shared<ImageNode>(curr_node->value, curr_node->layer+1);
+            curr_node->right = std::make_shared<ImageNode>(-1.f, curr_node->layer+1);
             curr_node->right->parent = curr_node;
           }
 
@@ -364,17 +364,19 @@ namespace BIVCodec
       // FIXME biolerplate code
       if (!curr_node->left)
       {
-        curr_node->left = std::make_shared<ImageNode>(curr_node->value, curr_node->layer+1);
+        curr_node->left = std::make_shared<ImageNode>(-1.f, curr_node->layer+1);
         curr_node->left->parent = curr_node;
       }
       if (!curr_node->right)
       {
-        curr_node->right = std::make_shared<ImageNode>(curr_node->value, curr_node->layer+1);
+        curr_node->right = std::make_shared<ImageNode>(-1.f, curr_node->layer+1);
         curr_node->right->parent = curr_node;
       }
 
       curr_node->left->value = _modifier.value_l;
       curr_node->right->value = _modifier.value_r;
+
+      curr_node->value = (_modifier.value_l+_modifier.value_r)/2;
 
       this->frames++;
 
@@ -459,6 +461,35 @@ namespace BIVCodec
         if (frame.header.type == FrameHeader::HeaderType::Image)
           applyFrameData(*std::static_pointer_cast<FrameImageData>(frame.data));
       }
+    }
+
+    public: void repair()
+    {
+      this->repairNodeValueRecursive(this->root_node);
+    }
+
+    protected: float repairNodeValueRecursive(std::shared_ptr<ImageNode> _node) noexcept
+    {
+      if (_node->left && _node->right)
+      {
+        _node->value = (repairNodeValueRecursive(_node->left)+repairNodeValueRecursive(_node->right))/2;
+      }
+      else
+      {
+        if (_node->left)
+        {
+          _node->value = repairNodeValueRecursive(_node->left);
+        }
+        else
+        {
+          if (_node->right)
+          {
+            _node->value = repairNodeValueRecursive(_node->right);
+          }
+        }
+      }
+
+      return _node->value;
     }
   };
 };
