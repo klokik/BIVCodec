@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <random>
@@ -26,19 +27,16 @@ int main(int argc, const char **argv)
 
   BIVCodec::ImageBSP bsp_from_chain(BIVCodec::ColorSpace::Grayscale);
   auto frame_chain = std::move(bsp_image.asFrameChain());
-  // remove some elements from chain
+  decltype(frame_chain) new_frame_chain;
+  // take some elements out from chain
   {
     std::random_device rd;
     std::default_random_engine re(rd());
 
-    int min_size = frame_chain.size()*0.2;
-    while (min_size != frame_chain.size())
-    {
-      std::uniform_int_distribution<int> unidist(1,frame_chain.size()-1);
+    std::shuffle(frame_chain.begin(), frame_chain.end(), re);
 
-      frame_chain.erase(frame_chain.begin()+unidist(re));
-    }
-
+    int new_size = frame_chain.size()*0.3;
+    frame_chain.erase(frame_chain.begin()+new_size, frame_chain.end());
   }
   bsp_from_chain.applyFrameChain(frame_chain);
 
