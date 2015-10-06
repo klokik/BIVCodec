@@ -5,6 +5,7 @@
 #include <vector>
 #include <tuple>
 #include <memory>
+#include <map>
 
 
 namespace BIVCodec
@@ -220,7 +221,8 @@ namespace BIVCodec
     private: float ratio = 1.0f;
     private: ColorSpace color_mode;
 
-    private: class ImageNode
+    // TODO: Make private
+    public: class ImageNode
     {
       public: float value = 0.f;
       public: int layer = 0;
@@ -291,7 +293,6 @@ namespace BIVCodec
       return (fdata.value_l+fdata.value_r)/2;
     }
 
-    /// NOT OPTIMAL
     public: ImageMatrix asImageMatrix(const int _width) const noexcept
     {
       int _height = _width*this->ratio;
@@ -302,7 +303,6 @@ namespace BIVCodec
       return std::move(image);
     }
 
-    /// NOT OPTIMAL
     protected: void applyNodeToMatrixRecursive(ImageMatrix &_dst, const Rect &_roi, std::shared_ptr<ImageNode> _node) const noexcept
     {
       if((!_node->left) && (!_node->right))
@@ -331,7 +331,7 @@ namespace BIVCodec
     }
 
     /// THREAD UNSAFE
-    public: void applyFrameData(const FrameImageData &_modifier) noexcept
+    public: std::weak_ptr<ImageNode> applyFrameData(const FrameImageData &_modifier) noexcept
     {
       auto curr_node = this->root_node;
 
@@ -377,11 +377,14 @@ namespace BIVCodec
       curr_node->right->value = _modifier.value_r;
 
       this->frames++;
+
+      return curr_node;
     }
 
     public: std::vector<Frame> asFrameChain() noexcept
     {
       std::vector<Frame> frame_chain;
+      std::map<int,std::vector<Frame>> layers;
 
       Frame frame;
 
@@ -400,18 +403,32 @@ namespace BIVCodec
 
       frame_chain.push_back(frame);
 
-      // foreach node in image-node-tree
-      auto node = this->root_node;
+      std::function<void(std::shared_ptr<ImageNode>)> pushNodeRecursive;
+      pushNodeRecursive = [&layers, &frame, &pushNodeRecursive](std::shared_ptr<ImageNode> _node)
       {
         auto image_data = std::make_shared<FrameImageData>();
         frame.data = std::static_pointer_cast<FrameData>(image_data);
 
         image_data->channel = 0;
 
-        image_data->value_l = node->left ? node->left->value : node->value;
-        image_data->value_r = node->right ? node->right->value : node->value;
+        image_data->value_l = _node->left ? _node->left->value : _node->value;
+        image_data->value_r = _node->right ? _node->right->value : _node->value;
 
-        frame_chain.push_back(frame);
+        layers[_node->layer].push_back(frame);
+
+        if (_node->left)
+          pushNodeRecursive(_node->left);
+
+        if (_node->right)
+          pushNodeRecursive(_node->right);
+      };
+
+      pushNodeRecursive(this->root_node);
+
+      for (auto layer : layers)
+      {
+        /// TODO: Permutate elements in each layer
+        frame_chain.insert(frame_chain.end(),layer.second.begin(),layer.second.end());
       }
 
       return std::move(frame_chain);
