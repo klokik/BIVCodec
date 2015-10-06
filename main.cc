@@ -23,10 +23,16 @@ int main(int argc, const char **argv)
 
   std::cout << "Frames: " << bsp_image.frames << std::endl;
 
-  BIVCodec::ImageMatrix dec_image(std::move(bsp_image.asImageMatrix(512)));
+  BIVCodec::ImageBSP bsp_from_chain(BIVCodec::ColorSpace::Grayscale);
+  auto frame_chain = std::move(bsp_image.asFrameChain());
+  bsp_from_chain.applyFrameChain(frame_chain);
+
+  BIVCodec::ImageMatrix dec_image(std::move(bsp_from_chain.asImageMatrix(512)));
 
   std::cout << "Width:\t" << dec_image.width << std::endl
-            << "Height:\t" << dec_image.height << std::endl;
+            << "Height:\t" << dec_image.height << std::endl
+            << "Chain length: " << frame_chain.size() << std::endl
+            << "Frames from chain: " << bsp_from_chain.frames << std::endl;
 
   std::ofstream ofs;
   ofs.open("image.data", std::ios_base::binary|std::ios_base::out);

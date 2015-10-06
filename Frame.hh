@@ -403,11 +403,18 @@ namespace BIVCodec
 
       frame_chain.push_back(frame);
 
-      std::function<void(std::shared_ptr<ImageNode>)> pushNodeRecursive;
-      pushNodeRecursive = [&layers, &frame, &pushNodeRecursive](std::shared_ptr<ImageNode> _node)
+      std::function<void(std::shared_ptr<ImageNode>,  std::vector<bool>)> pushNodeRecursive;
+      pushNodeRecursive = [&layers, &frame, &pushNodeRecursive](std::shared_ptr<ImageNode> _node, std::vector<bool> _path)
       {
+        if ((!_node->left) || (!_node->right))
+          return;
+
         auto image_data = std::make_shared<FrameImageData>();
         frame.data = std::static_pointer_cast<FrameData>(image_data);
+
+        image_data->location.layer = _path.size();
+        image_data->location.path = _path;
+        image_data->location.location_id = -1;         // TODO unique id
 
         image_data->channel = 0;
 
@@ -416,22 +423,42 @@ namespace BIVCodec
 
         layers[_node->layer].push_back(frame);
 
+
         if (_node->left)
-          pushNodeRecursive(_node->left);
+        {
+          auto new_path = _path;
+          new_path.push_back(0);
+          pushNodeRecursive(_node->left, std::move(new_path));
+        }
 
         if (_node->right)
-          pushNodeRecursive(_node->right);
+        {
+          auto new_path = _path;
+          new_path.push_back(1);
+          pushNodeRecursive(_node->right, std::move(new_path));
+        }
       };
 
-      pushNodeRecursive(this->root_node);
+      frame.header.type = FrameHeader::HeaderType::Image;
+
+      pushNodeRecursive(this->root_node, std::vector<bool>());
 
       for (auto layer : layers)
       {
         /// TODO: Permutate elements in each layer
-        frame_chain.insert(frame_chain.end(),layer.second.begin(),layer.second.end());
+        frame_chain.insert(frame_chain.end(), layer.second.begin(), layer.second.end());
       }
 
       return std::move(frame_chain);
+    }
+
+    public: void applyFrameChain(const std::vector<Frame> &_frames) noexcept
+    {
+      for (auto frame : _frames)
+      {
+        if (frame.header.type == FrameHeader::HeaderType::Image)
+          applyFrameData(*std::static_pointer_cast<FrameImageData>(frame.data));
+      }
     }
   };
 };
