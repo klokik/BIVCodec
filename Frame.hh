@@ -221,6 +221,8 @@ namespace BIVCodec
     private: float ratio = 1.0f;
     private: ColorSpace color_mode;
 
+    private: const float empty_color = -1.f;
+
     // TODO: Make private
     public: class ImageNode
     {
@@ -237,7 +239,7 @@ namespace BIVCodec
       { }
     };
 
-    private: std::shared_ptr<ImageNode> root_node = std::make_shared<ImageNode>(-1.f,0);
+    private: std::shared_ptr<ImageNode> root_node = std::make_shared<ImageNode>(this->empty_color,0);
 
     public: int frames = 0;
 
@@ -341,7 +343,7 @@ namespace BIVCodec
         {
           if (!curr_node->left)
           {
-            curr_node->left = std::make_shared<ImageNode>(-1.f, curr_node->layer+1);
+            curr_node->left = std::make_shared<ImageNode>(this->empty_color, curr_node->layer+1);
             curr_node->left->parent = curr_node;
           }
 
@@ -352,7 +354,7 @@ namespace BIVCodec
         {
           if (!curr_node->right)
           {
-            curr_node->right = std::make_shared<ImageNode>(-1.f, curr_node->layer+1);
+            curr_node->right = std::make_shared<ImageNode>(this->empty_color, curr_node->layer+1);
             curr_node->right->parent = curr_node;
           }
 
@@ -364,12 +366,12 @@ namespace BIVCodec
       // FIXME biolerplate code
       if (!curr_node->left)
       {
-        curr_node->left = std::make_shared<ImageNode>(-1.f, curr_node->layer+1);
+        curr_node->left = std::make_shared<ImageNode>(this->empty_color, curr_node->layer+1);
         curr_node->left->parent = curr_node;
       }
       if (!curr_node->right)
       {
-        curr_node->right = std::make_shared<ImageNode>(-1.f, curr_node->layer+1);
+        curr_node->right = std::make_shared<ImageNode>(this->empty_color, curr_node->layer+1);
         curr_node->right->parent = curr_node;
       }
 
@@ -478,13 +480,21 @@ namespace BIVCodec
       {
         if (_node->left)
         {
-          _node->value = repairNodeValueRecursive(_node->left);
+          float child_value = repairNodeValueRecursive(_node->left);
+          if (_node->value == this->empty_color)
+            _node->value = child_value;
+          else
+            _node->right = std::make_shared<ImageNode>(_node->value*2-child_value, _node->layer+1);
         }
         else
         {
           if (_node->right)
           {
-            _node->value = repairNodeValueRecursive(_node->right);
+            float child_value = repairNodeValueRecursive(_node->right);
+            if (_node->value == this->empty_color)
+              _node->value = child_value;
+            else
+              _node->left = std::make_shared<ImageNode>(_node->value*2-child_value, _node->layer+1);
           }
         }
       }
