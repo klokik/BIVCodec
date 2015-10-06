@@ -1,10 +1,11 @@
 #include <iostream>
 #include <fstream>
+#include <random>
 
 #include "Frame.hh"
 
-// #include "lena_gray.hh"
-#include "lena_color.hh"
+#include "lena_gray.hh"
+// #include "lena_color.hh"
 
 
 int main(int argc, const char **argv)
@@ -25,6 +26,20 @@ int main(int argc, const char **argv)
 
   BIVCodec::ImageBSP bsp_from_chain(BIVCodec::ColorSpace::Grayscale);
   auto frame_chain = std::move(bsp_image.asFrameChain());
+  // remove some elements from chain
+  {
+    std::random_device rd;
+    std::default_random_engine re(rd());
+
+    int min_size = frame_chain.size()*0.2;
+    while (min_size != frame_chain.size())
+    {
+      std::uniform_int_distribution<int> unidist(1,frame_chain.size()-1);
+
+      frame_chain.erase(frame_chain.begin()+unidist(re));
+    }
+
+  }
   bsp_from_chain.applyFrameChain(frame_chain);
 
   BIVCodec::ImageMatrix dec_image(std::move(bsp_from_chain.asImageMatrix(512)));
