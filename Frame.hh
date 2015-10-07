@@ -12,11 +12,11 @@
 namespace BIVCodec
 {
   // To keep PoC simple enough, support Grayscale images only;
-  enum class ColorSpace
+  enum class ColorSpace : int
   {
-    Grayscale,
-    HSL,
-    RGB
+    Grayscale = 0,
+    HSL = 1,
+    RGB = 2
   };
 
   struct FrameLocation
@@ -30,11 +30,32 @@ namespace BIVCodec
       assert(_layer <= layer);
       return path[_layer];
     }
+
+    uint32_t fuse() const noexcept
+    {
+      uint32_t fusion = 0;
+
+      for (int i = 0; i < path.size(); i++)
+      {
+        fusion |= path[i]<<i;
+      }
+
+      return fusion;
+    }
+
+    void defuse(const uint32_t _fusion,const int _layer) noexcept
+    {
+      layer = _layer;
+
+      path.clear();
+      for (int i = 0; i < layer; ++i)
+        path.push_back(_fusion & (1<<i));
+    }
   };
 
   struct FrameHeader
   {
-    enum class HeaderType {Image,Sync};
+    enum class HeaderType : int {Image = 0, Sync = 1};
     HeaderType type;
   };
 
@@ -72,6 +93,84 @@ namespace BIVCodec
   {
     FrameHeader header;
     std::shared_ptr<FrameData> data;
+
+    std::vector<uint8_t> serialize()
+    {
+      std::vector<uint8_t> binary_data;
+
+      binary_data.push_back(static_cast<uint8_t>(header.type));
+
+      if (header.type == FrameHeader::HeaderType::Image)
+      {
+        auto img = std::static_pointer_cast<FrameImageData>(data);
+
+        binary_data.push_back(img->location.layer);
+        uint32_t path = img->location.fuse();
+        binary_data.push_back(path && 255);
+        binary_data.push_back((path>>8) && 255);
+        binary_data.push_back((path>>16) && 255);
+        binary_data.push_back(static_cast<uint8_t>(img->channel));
+        binary_data.push_back(static_cast<uint8_t>(img->value_l));
+        binary_data.push_back(static_cast<uint8_t>(img->value_r));
+      }
+      else
+      {
+        auto sync = std::static_pointer_cast<FrameSyncData>(data);
+
+        binary_data.push_back(sync->width%256);
+        binary_data.push_back(sync->width/256);
+        binary_data.push_back(sync->ratio*128);
+        binary_data.push_back(static_cast<uint8_t>(sync->color_format));
+        binary_data.push_back(sync->id);
+        binary_data.push_back(sync->timestamp%256);
+        binary_data.push_back(sync->timestamp/256);
+      }
+
+      return std::move(binary_data);
+    }
+
+    void deserialize(const uint8_t *_data)
+    {
+      assert(_data != nullptr);
+
+      header.type = static_cast<FrameHeader::HeaderType>(_data[0]);
+
+      if (header.type == FrameHeader::HeaderType::Image)
+      {
+        std::shared_ptr<FrameImageData> img;
+
+        if (!data)
+        {
+          img = std::make_shared<FrameImageData>();
+          data = std::static_pointer_cast<FrameData>(img);
+        }
+        else
+          img = std::static_pointer_cast<FrameImageData>(data);
+
+        img->location.defuse(_data[1],_data[2]|(_data[3]<<8)|(_data[4]<<16));
+        img->channel = _data[5];
+        img->value_l = _data[6];
+        img->value_r = _data[7];
+      }
+      else
+      {
+        std::shared_ptr<FrameSyncData> sync;
+
+        if (!data)
+        {
+          sync = std::make_shared<FrameSyncData>();
+          data = std::static_pointer_cast<FrameData>(sync);
+        }
+        else
+          sync = std::static_pointer_cast<FrameSyncData>(data);
+
+        sync->width = _data[1]|(_data[2]<<8);
+        sync->ratio = _data[3]/128.f;
+        sync->color_format = static_cast<ColorSpace>(_data[4]);
+        sync->id = _data[5];
+        sync->timestamp = _data[6]|(_data[7]<<8);
+      }
+    }
   };
 
   struct Rect
