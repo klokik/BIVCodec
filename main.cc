@@ -37,6 +37,8 @@ int main(int argc, const char **argv)
 
   BIVCodec::ImageMatrix dec_image(std::move(bsp_from_chain.asImageMatrix(512)));
 
+  dec_image = std::move(matrixMap2(src_image, dec_image, [](float a,float b)->float { return std::abs(a-b); }));
+
   std::cout << "Width:\t" << dec_image.width << std::endl
             << "Height:\t" << dec_image.height << std::endl
             << "Chain length: " << frame_chain.size() << std::endl

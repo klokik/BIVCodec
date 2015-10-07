@@ -215,6 +215,28 @@ namespace BIVCodec
     }
   };
 
+  ImageMatrix matrixMap(const ImageMatrix &_a, std::function<float(float)> _fun)
+  {
+    ImageMatrix _b(_a.width, _a.height, ColorSpace::Grayscale);
+
+    for (int i = 0; i < _b.width*_b.height; ++i)
+      _b.setFragment(i, _fun(_a.getFragment(i)));
+
+    return std::move(_b);
+  }
+
+  ImageMatrix matrixMap2(const ImageMatrix &_a, const ImageMatrix &_b, std::function<float(float,float)> _fun)
+  {
+    assert(_a.width == _b.width);
+    assert(_a.height == _b.height);
+
+    ImageMatrix _c(_a.width, _a.height, ColorSpace::Grayscale);
+
+    for (int i = 0; i < _b.width*_b.height; ++i)
+      _c.setFragment(i, _fun(_a.getFragment(i), _b.getFragment(i)));
+
+    return std::move(_c);
+  }
 
   class ImageBSP
   {
