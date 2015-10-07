@@ -2,10 +2,11 @@
 #include <ctime>
 
 #include <algorithm>
-#include <vector>
+#include <random>
 #include <tuple>
 #include <memory>
 #include <map>
+#include <vector>
 
 
 namespace BIVCodec
@@ -449,7 +450,13 @@ namespace BIVCodec
 
       for (auto layer : layers)
       {
-        /// TODO: Permutate elements in each layer
+        /// TODO integrate one layer into another
+
+        // use deterministic permutations
+        std::mt19937 re(0);
+
+        std::shuffle(layer.second.begin(), layer.second.end(), re);
+
         frame_chain.insert(frame_chain.end(), layer.second.begin(), layer.second.end());
       }
 

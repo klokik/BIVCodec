@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <iostream>
 #include <fstream>
-#include <random>
 
 #include "Frame.hh"
 
@@ -30,11 +29,6 @@ int main(int argc, const char **argv)
   decltype(frame_chain) new_frame_chain;
   // take some elements out from chain
   {
-    std::random_device rd;
-    std::default_random_engine re(rd());
-
-    std::shuffle(frame_chain.begin(), frame_chain.end(), re);
-
     int new_size = frame_chain.size()*0.05;
     frame_chain.erase(frame_chain.begin()+new_size, frame_chain.end());
   }
