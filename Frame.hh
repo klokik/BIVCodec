@@ -87,10 +87,10 @@ namespace BIVCodec
         x(_x), y(_y), width(_width), height(_height)
     { }
 
-    constexpr bool isHorizontal()
+    constexpr bool isHorizontal() const noexcept
     { return this->width > this->height; }
 
-    constexpr bool isVertical()
+    constexpr bool isVertical() const noexcept
     { return !this->isHorizontal(); }
   };
 
@@ -164,6 +164,11 @@ namespace BIVCodec
       this->image_data = std::move(_src.image_data);
 
       return *this;
+    }
+
+    public: float *data() noexcept
+    {
+      return &this->image_data[0];
     }
 
     public: inline float getFragment(const int _x, const int _y, const int _channel = 0) const noexcept
