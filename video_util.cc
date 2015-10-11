@@ -20,18 +20,26 @@ void encode(const std::vector<std::string> &args)
   std::ofstream ofs;
   ofs.open("video.bfps", std::ios_base::out|std::ios_base::binary);
 
+  bool first_frame = true;
+
   while (1)
   {
-    Mat cam_source;
-    cap >> cam_source;
+    Mat cap_mat;
+    cap >> cap_mat;
 
-    if(cam_source.empty())
+    if(cap_mat.empty())
       break;
 
-    cvtColor(cam_source, cam_source, CV_BGR2GRAY);
-    resize(cam_source, cam_source, Size(64, 64));
+    cvtColor(cap_mat, cap_mat, CV_BGR2GRAY);
+    resize(cap_mat, cap_mat, Size(0, 0), 0.1, 0.1);
 
-    BIVCodec::ImageMatrix mat_source(cam_source.cols, cam_source.rows, BIVCodec::ColorSpace::Grayscale, cam_source.ptr(0));
+    if (first_frame)
+    {
+      std::cout << "Source size: (" << cap_mat.cols << ";" << cap_mat.rows << ")" <<std::endl;
+      first_frame = false;
+    }
+
+    BIVCodec::ImageMatrix mat_source(cap_mat.cols, cap_mat.rows, BIVCodec::ColorSpace::Grayscale, cap_mat.ptr(0));
     // mat_source = std::move(BIVCodec::matrixMap(mat_source, [](auto a) { return a/256; }));
     BIVCodec::ImageBSP bsp_source(mat_source, BIVCodec::ColorSpace::Grayscale);
 
@@ -46,6 +54,7 @@ void encode(const std::vector<std::string> &args)
     }
     std::cout << "|" << std::flush;
   }
+  std::cout << std::endl;
 
   ofs.close();
 }
@@ -64,7 +73,7 @@ void playback(const std::vector<std::string> &args)
   {
     BIVCodec::Frame frame;
 
-    ifs.read(&data[0],8);
+    ifs.read(&data[0], 8);
     frame.deserialize(reinterpret_cast<uint8_t*>(&data[0]));
 
     frame_chain.push_back(frame);
@@ -73,7 +82,10 @@ void playback(const std::vector<std::string> &args)
     {
       bsp_image.applyFrameChain(frame_chain);
       frame_chain.clear();
-      BIVCodec::ImageMatrix mat_image = std::move(bsp_image.asImageMatrix(512));
+
+      auto sync = std::static_pointer_cast<BIVCodec::FrameSyncData>(frame.data);
+
+      BIVCodec::ImageMatrix mat_image = std::move(bsp_image.asImageMatrix(std::min(sync->width*4, 512)));
       mat_image = std::move(BIVCodec::matrixMap(mat_image, [](auto a) { return a/256; }));
 
       Mat dec_mat(mat_image.height, mat_image.width, CV_32F, mat_image.data());
@@ -84,6 +96,7 @@ void playback(const std::vector<std::string> &args)
         break;
     }
   }
+  std::cout << std::endl;
 
   ifs.close();
 }
