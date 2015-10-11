@@ -1,5 +1,6 @@
 #include <cassert>
 #include <ctime>
+#include <iostream>
 
 #include <algorithm>
 #include <random>
@@ -35,21 +36,27 @@ namespace BIVCodec
     {
       uint32_t fusion = 0;
 
-      for (int i = 0; i < path.size(); i++)
+      for (int i = 0; i < path.size(); ++i)
       {
-        fusion |= path[i]<<i;
+        if (path[i])
+          fusion |= 1u<<i;
       }
 
       return fusion;
     }
 
-    void defuse(const uint32_t _fusion,const int _layer) noexcept
+    void defuse(const uint32_t _fusion, const int _layer) noexcept
     {
       layer = _layer;
 
       path.clear();
       for (int i = 0; i < layer; ++i)
-        path.push_back(_fusion & (1<<i));
+        path.push_back(_fusion & (1u<<i));
+    }
+
+    bool operator==(const FrameLocation &_a)
+    {
+      return path == _a.path;
     }
   };
 
@@ -79,6 +86,11 @@ namespace BIVCodec
 
     FrameID id;
     Timestamp timestamp;
+
+    bool operator==(const FrameSyncData &_a)
+    {
+      return width == _a.width;
+    }
   };
 
   struct FrameImageData: public FrameData
@@ -87,6 +99,14 @@ namespace BIVCodec
     int channel;
     float value_l;
     float value_r;
+
+    bool operator==(const FrameImageData &_a)
+    {
+      return (location == _a.location) &&
+             (channel == _a.channel) &&
+             (std::abs(value_l-_a.value_l) < 1.01) &&
+             (std::abs(value_r-_a.value_r) < 1.01);
+    }
   };
 
   struct Frame
@@ -106,9 +126,9 @@ namespace BIVCodec
 
         binary_data.push_back(img->location.layer);
         uint32_t path = img->location.fuse();
-        binary_data.push_back(path && 255);
-        binary_data.push_back((path>>8) && 255);
-        binary_data.push_back((path>>16) && 255);
+        binary_data.push_back(path);
+        binary_data.push_back(path>>8);
+        binary_data.push_back(path>>16);
         binary_data.push_back(static_cast<uint8_t>(img->channel));
         binary_data.push_back(static_cast<uint8_t>(img->value_l));
         binary_data.push_back(static_cast<uint8_t>(img->value_r));
@@ -147,7 +167,11 @@ namespace BIVCodec
         else
           img = std::static_pointer_cast<FrameImageData>(data);
 
-        img->location.defuse(_data[1],_data[2]|(_data[3]<<8)|(_data[4]<<16));
+        img->location.defuse(
+          static_cast<uint32_t>(_data[2])|
+          static_cast<uint32_t>(_data[3])<<8|
+          static_cast<uint32_t>(_data[4])<<16,
+          _data[1]);
         img->channel = _data[5];
         img->value_l = _data[6];
         img->value_r = _data[7];
@@ -169,6 +193,50 @@ namespace BIVCodec
         sync->color_format = static_cast<ColorSpace>(_data[4]);
         sync->id = _data[5];
         sync->timestamp = _data[6]|(_data[7]<<8);
+      }
+    }
+
+    bool operator==(const Frame &_a)
+    {
+      bool eq = (header.type == _a.header.type);
+
+      if (eq)
+      {
+        if (header.type == FrameHeader::HeaderType::Image)
+          eq &= (*std::static_pointer_cast<FrameImageData>(data) == *std::static_pointer_cast<FrameImageData>(_a.data));
+        else
+          eq &= (*std::static_pointer_cast<FrameSyncData>(data) == *std::static_pointer_cast<FrameSyncData>(_a.data));
+      }
+
+      return eq;
+    }
+
+    void dump()
+    {
+      std::cout << "{'header_type:";
+
+      if (header.type == FrameHeader::HeaderType::Image)
+      {
+        auto img = std::static_pointer_cast<FrameImageData>(data);
+
+        std::cout << "'image',"
+                  << "'chann':" << img->channel
+                  << ",'val_l':" << img->value_l
+                  << ",'val_r':" << img->value_r
+                  << ",'location':{'layer':" << img->location.layer
+                  << ",'path':[";
+
+        for (auto item : img->location.path)
+          std::cout << "'" << item << "',";
+        std::cout << "\b]}";
+
+        std::cout << "}" << std::endl;
+      }
+      else
+      {
+        auto sync = std::static_pointer_cast<FrameSyncData>(data);
+
+        std::cout << "'sync',..." << "}" << std::endl;
       }
     }
   };
