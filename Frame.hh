@@ -663,6 +663,14 @@ namespace BIVCodec
       {
         if (frame.header.type == FrameHeader::HeaderType::Image)
           applyFrameData(*std::static_pointer_cast<FrameImageData>(frame.data));
+        else
+        {
+          auto sync = std::static_pointer_cast<FrameSyncData>(frame.data);
+
+          this->width = sync->width;
+          this->ratio = sync->ratio;
+          this->color_mode = sync->color_format;
+        }
       }
     }
 
