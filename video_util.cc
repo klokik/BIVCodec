@@ -78,7 +78,10 @@ void playback(const std::vector<std::string> &args)
 
       Mat dec_mat(mat_image.height, mat_image.width, CV_32F, mat_image.data());
       imshow("BIVCodec", dec_mat);
+
       std::cout << "|" << std::flush;
+      if (waitKey(5) == 27)
+        break;
     }
   }
 
