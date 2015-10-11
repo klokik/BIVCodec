@@ -64,7 +64,6 @@ void playback(const std::vector<std::string> &args)
   std::ifstream ifs;
   ifs.open("video.bfps", std::ios_base::in|std::ios_base::binary);
 
-  std::vector<BIVCodec::Frame> frame_chain;
   BIVCodec::ImageBSP bsp_image(BIVCodec::ColorSpace::Grayscale);
 
   char data[8];
@@ -76,14 +75,10 @@ void playback(const std::vector<std::string> &args)
     ifs.read(&data[0], 8);
     frame.deserialize(reinterpret_cast<uint8_t*>(&data[0]));
 
-    frame_chain.push_back(frame);
-
-    if (frame.header.type == BIVCodec::FrameHeader::HeaderType::Sync && !frame_chain.empty())
+    if (frame.header.type == BIVCodec::FrameHeader::HeaderType::Sync)
     {
-      bsp_image.applyFrameChain(frame_chain);
-      frame_chain.clear();
-
       auto sync = std::static_pointer_cast<BIVCodec::FrameSyncData>(frame.data);
+      bsp_image.applyFrameData(*sync);
 
       BIVCodec::ImageMatrix mat_image = std::move(bsp_image.asImageMatrix(std::min(sync->width*4, 512)));
       mat_image = std::move(BIVCodec::matrixMap(mat_image, [](auto a) { return a/256; }));
@@ -95,6 +90,8 @@ void playback(const std::vector<std::string> &args)
       if (waitKey(5) == 27)
         break;
     }
+    else
+      bsp_image.applyFrameData(*std::static_pointer_cast<BIVCodec::FrameImageData>(frame.data));
   }
   std::cout << std::endl;
 

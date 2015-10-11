@@ -580,6 +580,13 @@ namespace BIVCodec
       return curr_node;
     }
 
+    public: void applyFrameData(const FrameSyncData &_modifier) noexcept
+    {
+      this->width = _modifier.width;
+      this->ratio = _modifier.ratio;
+      this->color_mode = _modifier.color_format;
+    }
+
     public: std::vector<Frame> asFrameChain() noexcept
     {
       std::vector<Frame> frame_chain;
@@ -664,13 +671,7 @@ namespace BIVCodec
         if (frame.header.type == FrameHeader::HeaderType::Image)
           applyFrameData(*std::static_pointer_cast<FrameImageData>(frame.data));
         else
-        {
-          auto sync = std::static_pointer_cast<FrameSyncData>(frame.data);
-
-          this->width = sync->width;
-          this->ratio = sync->ratio;
-          this->color_mode = sync->color_format;
-        }
+          applyFrameData(*std::static_pointer_cast<FrameSyncData>(frame.data));
       }
     }
 
