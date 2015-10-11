@@ -16,3 +16,6 @@ target_link_libraries(video_stream ${OpenCV_LIBS})
 
 add_executable(video_util video_util.cc)
 target_link_libraries(video_util ${OpenCV_LIBS})
+
+add_executable(video_diff video_diff.cc)
+target_link_libraries(video_diff ${OpenCV_LIBS})

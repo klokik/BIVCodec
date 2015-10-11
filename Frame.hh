@@ -211,6 +211,10 @@ namespace BIVCodec
       return eq;
     }
 
+    // DUMMY
+    bool operator<(const Frame &) const
+    { return false; }
+
     void dump()
     {
       std::cout << "{'header_type:";
@@ -238,6 +242,18 @@ namespace BIVCodec
 
         std::cout << "'sync',..." << "}" << std::endl;
       }
+    }
+
+    std::shared_ptr<FrameImageData> imageData()
+    {
+      assert(header.type == FrameHeader::HeaderType::Image);
+      return std::static_pointer_cast<FrameImageData>(data);
+    }
+
+    std::shared_ptr<FrameSyncData> syncData()
+    {
+      assert(header.type == FrameHeader::HeaderType::Sync);
+      return std::static_pointer_cast<FrameSyncData>(data);
     }
   };
 
