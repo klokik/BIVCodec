@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cassert>
 #include <ctime>
 #include <iostream>
@@ -470,8 +472,8 @@ namespace BIVCodec
       this->applyFrameFromMatrixRecursive(_src, Rect(0, 0, _src.width, _src.height), std::vector<bool>());
     }
 
-    /// SINGLETHREAD
-    protected: float applyFrameFromMatrixRecursive(const ImageMatrix &_src, const Rect &_roi, std::vector<bool> _path)
+    /// SINGLETHREAD PROTECTED
+    public: float applyFrameFromMatrixRecursive(const ImageMatrix &_src, const Rect &_roi, std::vector<bool> _path)
     {
       // limit number of layers, (24bit path depth - 4k resolution max)
       if ((std::max(_roi.width,_roi.height) <= 1) || (_path.size() > 24))
