@@ -43,7 +43,7 @@ int main(int argc, const char **argv)
 
     std::priority_queue<std::tuple<float, BIVCodec::Frame>> priority_chain;
 
-    assert(frame_chain.size() == frame_chain.size());
+    assert(prev_chain.size() == frame_chain.size());
     for (int i = 1; i < frame_chain.size(); ++i)
     {
 
