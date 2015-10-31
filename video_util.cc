@@ -8,6 +8,7 @@
 #include <opencv2/opencv.hpp>
 
 #include "Frame.hh"
+#include "Encoder.cc"
 
 using namespace cv;
 
@@ -22,6 +23,8 @@ void encode(const std::vector<std::string> &args)
 
   bool first_frame = true;
 
+  std::shared_ptr<BIVCodec::Encoder> encoder;
+
   while (1)
   {
     Mat cap_mat;
@@ -35,18 +38,20 @@ void encode(const std::vector<std::string> &args)
 
     if (first_frame)
     {
+      encoder = std::make_shared<BIVCodec::Encoder>(cap_mat.cols, cap_mat.rows);
+      encoder->limitChainLengthPerImage(1000);
+
       std::cout << "Source size: (" << cap_mat.cols << ";" << cap_mat.rows << ")" <<std::endl;
       first_frame = false;
     }
 
     BIVCodec::ImageMatrix mat_source(cap_mat.cols, cap_mat.rows, BIVCodec::ColorSpace::Grayscale, cap_mat.ptr(0));
-    // mat_source = std::move(BIVCodec::matrixMap(mat_source, [](auto a) { return a/256; }));
-    BIVCodec::ImageBSP bsp_source(mat_source, BIVCodec::ColorSpace::Grayscale);
 
-    auto frame_chain = std::move(bsp_source.asFrameChain());
+    encoder->nextImageMatrix(mat_source);
 
-    for (auto frame : frame_chain)
+    while (!encoder->empty())
     {
+      auto frame = encoder->fetchFrame();
       auto data = frame.serialize();
       assert(data.size() == 8);
 
