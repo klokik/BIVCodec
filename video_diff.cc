@@ -1,5 +1,6 @@
 #include <cassert>
 
+#include <chrono>
 #include <iostream>
 #include <queue>
 #include <tuple>
@@ -13,7 +14,7 @@ using namespace cv;
 
 int main(int argc, const char **argv)
 {
-  VideoCapture cap("/home/klokik/Movies/sintel_trailer-480p.mp4");
+  VideoCapture cap(1);//"/home/klokik/Movies/sintel_trailer-480p.mp4");
   assert(cap.isOpened());
 
   const int enc_width = 64;
@@ -31,6 +32,7 @@ int main(int argc, const char **argv)
   {
     Mat cam_source;
     cap >> cam_source;
+    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
     cvtColor(cam_source, cam_source, CV_BGR2GRAY);
     resize(cam_source, cam_source, Size(enc_width, enc_height));
@@ -66,7 +68,7 @@ int main(int argc, const char **argv)
 
     if (!first_frame)
     {
-      int new_size = frame_chain.size()*0.05;
+      int new_size = frame_chain.size()*1.0;
       frame_chain.erase(frame_chain.begin()+new_size, frame_chain.end());
     }
     else
@@ -79,6 +81,13 @@ int main(int argc, const char **argv)
 
     Mat dec_mat(mat_image.height, mat_image.width, CV_32F, mat_image.data());
 
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    std::stringstream sstr;
+    sstr << "IO latency "
+         << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()
+         << "ms.";
+
+    putText(dec_mat, sstr.str(), Point(100, 50), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255), 2);
     imshow("BIVCodec", dec_mat);
 
     if (waitKey(5) == 27)

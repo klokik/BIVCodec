@@ -35,7 +35,7 @@ void encode(const std::vector<std::string> &args)
       break;
 
     cvtColor(cap_mat, cap_mat, CV_BGR2GRAY);
-    resize(cap_mat, cap_mat, Size(0, 0), 0.1, 0.1);
+    resize(cap_mat, cap_mat, Size(0, 0), 0.05, 0.05);
 
     if (first_frame)
     {

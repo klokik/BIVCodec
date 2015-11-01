@@ -26,6 +26,8 @@ namespace BIVCodec
 
     protected: std::queue<Frame> frame_stream;
 
+    protected: int threads = 1;
+
 
     public: Encoder() = default;
 
@@ -42,7 +44,7 @@ namespace BIVCodec
       {
         ImageMatrix black_mat(_mat.width, _mat.height, ColorSpace::Grayscale);
         this->previous_image_bsp.applyFrameFromMatrixRecursive(black_mat,
-            Rect(0, 0, black_mat.width, black_mat.height), std::vector<bool>());
+            Rect(0, 0, black_mat.width, black_mat.height), std::vector<bool>(), threads);
         previous_chain = std::move(previous_image_bsp.asFrameChain());
       }
 
@@ -53,7 +55,7 @@ namespace BIVCodec
         auto b = previous_chain[i].imageData();
 
         float cost = std::abs(a->value_l-b->value_l)+std::abs(a->value_r-b->value_r);
-        cost /= a->location.layer+1;
+        cost /= std::pow(1.2f, a->location.layer+1);
         priority_chain.push(std::make_tuple(cost, frame_chain[i]));
       }
 
@@ -119,6 +121,12 @@ namespace BIVCodec
       this->max_length = _num;
 
       this->limit_matter = LimitMatter::Length;
+    }
+
+    public: void useThreads(const int _threads)
+    {
+      assert(_threads >= 1);
+      this->threads = _threads;
     }
   };
 }

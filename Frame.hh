@@ -6,11 +6,13 @@
 
 #include <algorithm>
 #include <random>
+#include <future>
 #include <tuple>
 #include <memory>
 #include <map>
 #include <vector>
 
+#define DEF_THREAD_NUM 2
 
 namespace BIVCodec
 {
@@ -469,11 +471,11 @@ namespace BIVCodec
       this->ratio = static_cast<float>(_src.height)/_src.width;
       this->color_mode = ColorSpace::Grayscale;
 
-      this->applyFrameFromMatrixRecursive(_src, Rect(0, 0, _src.width, _src.height), std::vector<bool>());
+      this->applyFrameFromMatrixRecursive(_src, Rect(0, 0, _src.width, _src.height), std::vector<bool>(), DEF_THREAD_NUM);
     }
 
-    /// SINGLETHREAD PROTECTED
-    public: float applyFrameFromMatrixRecursive(const ImageMatrix &_src, const Rect &_roi, std::vector<bool> _path)
+    /// PROTECTED
+    public: float applyFrameFromMatrixRecursive(const ImageMatrix &_src, const Rect &_roi, std::vector<bool> _path, int _threads = 1)
     {
       // limit number of layers, (24bit path depth - 4k resolution max)
       if ((std::max(_roi.width,_roi.height) <= 1) || (_path.size() > 24))
@@ -499,9 +501,22 @@ namespace BIVCodec
       path_left.push_back(0);
       path_right.push_back(1);
 
-      // thread it?
-      fdata.value_l = applyFrameFromMatrixRecursive(_src, rect_left, path_left);
-      fdata.value_r = applyFrameFromMatrixRecursive(_src, rect_right, path_right);
+      if (_threads == 1)
+      {
+        fdata.value_l = applyFrameFromMatrixRecursive(_src, rect_left, std::move(path_left));
+        fdata.value_r = applyFrameFromMatrixRecursive(_src, rect_right, std::move(path_right));
+      }
+      else
+      {
+        auto future_l = std::async(std::launch::async,
+            [this](const ImageMatrix &_a, const Rect &_b, std::vector<bool> &_c, int _d) -> float
+                { return applyFrameFromMatrixRecursive(_a, _b, std::move(_c), _d); },
+            std::ref(_src), std::ref(rect_left), std::ref(path_left), _threads/2);
+
+        fdata.value_r = applyFrameFromMatrixRecursive(_src, rect_right, std::move(path_right), (_threads-_threads/2));
+
+        fdata.value_l = future_l.get();
+      }
 
       applyFrameData(fdata);
 
@@ -513,12 +528,12 @@ namespace BIVCodec
       int _height = _width*this->ratio;
       ImageMatrix image(_width, _height, ColorSpace::Grayscale);
 
-      applyNodeToMatrixRecursive(image, Rect(0, 0, _width, _height), this->root_node);
+      applyNodeToMatrixRecursive(image, Rect(0, 0, _width, _height), this->root_node, DEF_THREAD_NUM);
 
       return std::move(image);
     }
 
-    protected: void applyNodeToMatrixRecursive(ImageMatrix &_dst, const Rect &_roi, std::shared_ptr<ImageNode> _node) const noexcept
+    protected: void applyNodeToMatrixRecursive(ImageMatrix &_dst, const Rect &_roi, std::shared_ptr<ImageNode> _node, int _threads = 1) const noexcept
     {
       if((!_node->left) && (!_node->right))
       {
@@ -534,15 +549,32 @@ namespace BIVCodec
 
       std::tie(rect_left, rect_right) = splitRect(_roi);
 
-      if (_node->left)
-        applyNodeToMatrixRecursive(_dst, rect_left, _node->left);
-      else
-        _dst.fillRect(rect_left, _node->value);
+      auto applyLeft = [this, &_node, &rect_left, &_dst](int _th) {
+        if (_node->left)
+          applyNodeToMatrixRecursive(_dst, rect_left, _node->left, _th);
+        else
+          _dst.fillRect(rect_left, _node->value);
+      };
 
-      if (_node->right)
-        applyNodeToMatrixRecursive(_dst, rect_right, _node->right);
+      auto applyRight = [this, &_node, &rect_right, &_dst](int _th) {
+        if (_node->right)
+          applyNodeToMatrixRecursive(_dst, rect_right, _node->right, _th);
+        else
+          _dst.fillRect(rect_right, _node->value);
+      };
+
+      if (_threads == 1)
+      {
+        applyLeft(1);
+        applyRight(1);
+      }
       else
-        _dst.fillRect(rect_right, _node->value);
+      {
+        std::thread left_thread(applyLeft, _threads/2);
+        applyRight(_threads - (_threads/2));
+
+        left_thread.join();
+      }
     }
 
     /// THREAD UNSAFE
