@@ -23,7 +23,8 @@ void encode(const std::vector<std::string> &args)
 
   bool first_frame = true;
 
-  std::shared_ptr<BIVCodec::Encoder> encoder;
+  BIVCodec::Encoder encoder;
+  encoder.limitChainLengthPerImage(100);
 
   while (1)
   {
@@ -38,20 +39,17 @@ void encode(const std::vector<std::string> &args)
 
     if (first_frame)
     {
-      encoder = std::make_shared<BIVCodec::Encoder>(cap_mat.cols, cap_mat.rows);
-      encoder->limitChainLengthPerImage(1000);
-
       std::cout << "Source size: (" << cap_mat.cols << ";" << cap_mat.rows << ")" <<std::endl;
       first_frame = false;
     }
 
     BIVCodec::ImageMatrix mat_source(cap_mat.cols, cap_mat.rows, BIVCodec::ColorSpace::Grayscale, cap_mat.ptr(0));
 
-    encoder->nextImageMatrix(mat_source);
+    encoder.nextImageMatrix(mat_source);
 
-    while (!encoder->empty())
+    while (!encoder.empty())
     {
-      auto frame = encoder->fetchFrame();
+      auto frame = encoder.fetchFrame();
       auto data = frame.serialize();
       assert(data.size() == 8);
 
